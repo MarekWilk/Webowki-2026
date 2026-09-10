@@ -40,8 +40,9 @@ function TaskForm({
     <section className="task-form">
       <h2>Dodaj zadanie</h2>
 
-      <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit} className="mb-4">
         <input
+          className="form-control mb-2"
           type="text"
           placeholder="Nazwa zadania"
           value={taskNazwa}
@@ -49,12 +50,14 @@ function TaskForm({
         />
 
         <textarea
+          className="form-control mb-2"
           placeholder="Opis zadania"
           value={taskOpis}
           onChange={(e) => setTaskOpis(e.target.value)}
         />
 
         <select
+          className="form-select mb-2"
           value={taskPriorytet}
           onChange={(e) =>
             setTaskPriorytet(
@@ -68,6 +71,7 @@ function TaskForm({
         </select>
 
         <input
+          className="form-control mb-2"
           type="number"
           min="1"
           placeholder="Przewidywany czas (godziny)"
@@ -76,6 +80,7 @@ function TaskForm({
         />
 
         <select
+          className="form-select mb-2"
           value={taskHistoryjka ?? ''}
           onChange={(e) =>
             setTaskHistoryjka(
@@ -94,7 +99,7 @@ function TaskForm({
             ))}
         </select>
 
-        <button type="submit">
+        <button type="submit" className="btn btn-primary">
           Dodaj zadanie
         </button>
       </form>

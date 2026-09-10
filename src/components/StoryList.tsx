@@ -24,7 +24,7 @@ function StoryList({
   return (
     <>
       {filteredStories.map((story) => (
-        <article key={story.id} className="story-card">
+        <article key={story.id} className="story-card card mb-3 p-3">
           <h4>{story.nazwa}</h4>
 
           <p>{story.opis}</p>
@@ -38,11 +38,11 @@ function StoryList({
             {new Date(story.dataUtworzenia).toLocaleString()}
           </p>
 
-          <button onClick={() => onEdit(story)}>
+          <button onClick={() => onEdit(story)} className="btn btn-warning me-2">
             Edytuj
           </button>
 
-          <button onClick={() => onDelete(story.id)}>
+          <button onClick={() => onDelete(story.id)} className="btn btn-danger">
             Usuń
           </button>
         </article>

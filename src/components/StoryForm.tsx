@@ -34,8 +34,9 @@ function StoryForm({
     <section className="stories">
       <h2>Dodaj historyjkę</h2>
 
-      <form onSubmit={onSubmit}>
+      <form onSubmit={onSubmit} className="mb-4">
         <input
+          className="form-control mb-2"
           type="text"
           placeholder="Nazwa historyjki"
           value={storyNazwa}
@@ -43,6 +44,7 @@ function StoryForm({
         />
 
         <textarea
+          className="form-control mb-2"
           placeholder="Opis historyjki"
           value={storyOpis}
           onChange={(e) => setStoryOpis(e.target.value)}
@@ -51,6 +53,7 @@ function StoryForm({
         <label>
           Priorytet:
           <select
+            className="form-select mb-2"
             value={storyPriorytet}
             onChange={(e) =>
               setStoryPriorytet(
@@ -67,6 +70,7 @@ function StoryForm({
         <label>
           Stan:
           <select
+            className="form-select mb-2"
             value={storyStan}
             onChange={(e) =>
               setStoryStan(e.target.value as Story['stan'])
@@ -78,7 +82,7 @@ function StoryForm({
           </select>
         </label>
 
-        <button type="submit">
+        <button type="submit" className="btn btn-primary">
           Dodaj historyjkę
         </button>
       </form>

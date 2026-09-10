@@ -18,6 +18,7 @@ import StoryList from './components/StoryList'
 import StoryForm from './components/StoryForm'
 
 function App() {
+  const [darkMode, setDarkMode] = useState(false)
   const user = getLoggedUser()
   const users = getUsers()
   const [projects, setProjects] = useState<Project[]>([])
@@ -41,6 +42,7 @@ function App() {
   const [nazwa, setNazwa] = useState('')
   const [opis, setOpis] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
+  
 
   useEffect(() => {
   setProjects(getProjects())
@@ -422,8 +424,14 @@ const handleTaskEdit = (task: Task) => {
   }
 
   return (
-    <main className="container">
-      <h1>ManageMe</h1>
+    <main className={`container py-4 ${darkMode ? 'dark-mode' : ''}`}>
+      <h1 className="mb-4">ManageMe</h1>
+      <button
+        className="btn btn-secondary mb-3"
+        onClick={() => setDarkMode(!darkMode)}
+      >
+        {darkMode ? '☀️ Tryb jasny' : '🌙 Tryb ciemny'}
+      </button>
 
       <p>
       Zalogowany użytkownik: {user.imie} {user.nazwisko}
@@ -453,12 +461,13 @@ const handleTaskEdit = (task: Task) => {
         </select>
       </div>
 
-      <form onSubmit={handleSubmit} className="project-form">
+      <form onSubmit={handleSubmit} className="project-form mb-4">
         <h2>
           {editingId !== null ? 'Edytuj projekt' : 'Dodaj projekt'}
         </h2>
 
         <input
+          className="form-control mb-2"
           type="text"
           placeholder="Nazwa projektu"
           value={nazwa}
@@ -466,17 +475,18 @@ const handleTaskEdit = (task: Task) => {
         />
 
         <textarea
+          className="form-control mb-2"
           placeholder="Opis projektu"
           value={opis}
           onChange={(e) => setOpis(e.target.value)}
         />
 
-        <button type="submit">
+        <button type="submit" className="btn btn-primary me-2">
           {editingId !== null ? 'Zapisz zmiany' : 'Dodaj projekt'}
         </button>
 
         {editingId !== null && (
-          <button type="button" onClick={handleCancel}>
+          <button type="button" className="btn btn-secondary" onClick={handleCancel}>
             Anuluj
           </button>
         )}
@@ -607,15 +617,15 @@ const handleTaskEdit = (task: Task) => {
           <p>Brak projektów.</p>
         ) : (
           projects.map((project) => (
-            <article key={project.id} className="project-card">
+            <article key={project.id}  className="project-card card mb-3 p-3">
               <h3>{project.nazwa}</h3>
               <p>{project.opis}</p>
 
-              <button onClick={() => handleEdit(project)}>
+              <button onClick={() => handleEdit(project)} className="btn btn-warning me-2">
                 Edytuj
               </button>
 
-              <button onClick={() => handleDelete(project.id)}>
+              <button onClick={() => handleDelete(project.id)} className="btn btn-danger">
                 Usuń
               </button>
             </article>

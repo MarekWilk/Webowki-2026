@@ -32,7 +32,7 @@ function TaskCard({
   )
 
   return (
-    <article className="task-card">
+    <article className="task-card card mb-3 p-3">
       <h4>{task.nazwa}</h4>
 
       {selectedTaskId === task.id && (
@@ -120,7 +120,9 @@ function TaskCard({
         </select>
       </label>
 
+      <div className="d-flex gap-2 flex-wrap">
       <button
+        className="btn btn-info me-2"
         onClick={() =>
             onSelect(
             selectedTaskId === task.id ? null : task.id
@@ -130,19 +132,20 @@ function TaskCard({
           Szczegóły
       </button>
 
-      <button onClick={() => onEdit(task)}>
+      <button onClick={() => onEdit(task)} className="btn btn-warning me-2">
         Edytuj
       </button>
 
       {task.stan === 'doing' && (
-        <button onClick={() => onComplete(task)}>
+        <button onClick={() => onComplete(task)} className="btn btn-success me-2">
           Zakończ
         </button>
       )}
 
-      <button onClick={() => onDelete(task.id)}>
+      <button onClick={() => onDelete(task.id)} className="btn btn-danger">
         Usuń
       </button>
+      </div>
     </article>
   )
 }
