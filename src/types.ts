@@ -26,6 +26,7 @@ export interface Task {
   priorytet: 'niski' | 'średni' | 'wysoki'
   historyjka: number
   przewidywanyCzas: number
+  zrealizowaneRoboczogodziny: number | null
   stan: 'todo' | 'doing' | 'done'
   dataDodania: string
   dataStartu: string | null

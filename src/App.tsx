@@ -21,6 +21,7 @@ function App() {
     useState<number | null>(() => getActiveProjectId())
   const [stories, setStories] = useState<Story[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
   const [taskNazwa, setTaskNazwa] = useState('')
   const [taskOpis, setTaskOpis] = useState('')
   const [taskPriorytet, setTaskPriorytet] =
@@ -118,6 +119,7 @@ function App() {
     priorytet: taskPriorytet,
     historyjka: taskHistoryjka,
     przewidywanyCzas: Number(taskCzas),
+    zrealizowaneRoboczogodziny: null,
     stan: 'todo',
     dataDodania: new Date().toISOString(),
     dataStartu: null,
@@ -244,6 +246,68 @@ const handleTaskEdit = (task: Task) => {
 
   setTasks(updatedTasks)
   saveTasks(updatedTasks)
+
+  const updatedStories = stories.map((story) =>
+    story.id === task.historyjka && story.stan === 'todo'
+      ? {
+          ...story,
+          stan: 'doing' as Story['stan'],
+        }
+      : story
+  )
+
+  setStories(updatedStories)
+  saveStories(updatedStories)
+}
+
+  const handleTaskComplete = (task: Task) => {
+  const czas = prompt(
+    'Ile godzin zajęło wykonanie zadania?',
+    String(task.przewidywanyCzas)
+  )
+
+  if (czas === null || Number(czas) <= 0) {
+    alert('Podaj prawidłową liczbę godzin.')
+    return
+  }
+
+  const dataZakonczenia = new Date().toISOString()
+
+  const updatedTasks = tasks.map((item) =>
+    item.id === task.id
+      ? {
+          ...item,
+          stan: 'done' as Task['stan'],
+          dataZakonczenia,
+          zrealizowaneRoboczogodziny: Number(czas),
+        }
+      : item
+  )
+
+  setTasks(updatedTasks)
+  saveTasks(updatedTasks)
+
+  const storyTasks = updatedTasks.filter(
+    (item) => item.historyjka === task.historyjka
+  )
+
+  const allTasksDone = storyTasks.every(
+    (item) => item.stan === 'done'
+  )
+
+  if (allTasksDone) {
+    const updatedStories = stories.map((story) =>
+      story.id === task.historyjka
+        ? {
+            ...story,
+            stan: 'done' as Story['stan'],
+          }
+        : story
+    )
+
+    setStories(updatedStories)
+    saveStories(updatedStories)
+  }
 }
 
   const handleStorySubmit = (e: React.FormEvent) => {
@@ -698,6 +762,16 @@ const handleTaskEdit = (task: Task) => {
             </select>
           </label>
 
+          <button
+            onClick={() =>
+              setSelectedTaskId(
+                selectedTaskId === task.id ? null : task.id
+              )
+            }
+          >
+            Szczegóły
+          </button>
+
           <button onClick={() => handleTaskEdit(task)}>
             Edytuj
           </button>
@@ -724,6 +798,52 @@ const handleTaskEdit = (task: Task) => {
         <article key={task.id} className="task-card">
           <h4>{task.nazwa}</h4>
 
+        {selectedTaskId === task.id && (
+          <div className="task-details">
+            <h5>Szczegóły zadania</h5>
+
+            <p>
+              <strong>Historyjka:</strong>{' '}
+              {stories.find((story) => story.id === task.historyjka)?.nazwa ?? 'Brak'}
+            </p>
+
+            <p>
+              <strong>Odpowiedzialny:</strong>{' '}
+              {users.find((user) => user.id === task.wlasciciel)
+                ? `${users.find((user) => user.id === task.wlasciciel)?.imie} ${users.find((user) => user.id === task.wlasciciel)?.nazwisko}`
+                : 'Nieprzypisany'}
+            </p>
+
+            <p>
+              <strong>Opis:</strong> {task.opis}
+            </p>
+
+            <p>
+              <strong>Przewidywany czas:</strong>{' '}
+              {task.przewidywanyCzas} h
+            </p>
+
+            <p>
+              <strong>Data rozpoczęcia:</strong>{' '}
+              {task.dataStartu
+                ? new Date(task.dataStartu).toLocaleString()
+                : 'Brak'}
+            </p>
+
+            <p>
+              <strong>Data zakończenia:</strong>{' '}
+              {task.dataZakonczenia
+                ? new Date(task.dataZakonczenia).toLocaleString()
+                : 'Brak'}
+            </p>
+
+            <p>
+              <strong>Zrealizowane roboczogodziny:</strong>{' '}
+              {task.zrealizowaneRoboczogodziny ?? 'Brak'}
+            </p>
+          </div>
+        )}
+
           <p>{task.opis}</p>
 
           <p>
@@ -764,8 +884,22 @@ const handleTaskEdit = (task: Task) => {
             </select>
           </label>
 
+          <button
+            onClick={() =>
+              setSelectedTaskId(
+                selectedTaskId === task.id ? null : task.id
+              )
+            }
+          >
+            Szczegóły
+          </button>
+
           <button onClick={() => handleTaskEdit(task)}>
             Edytuj
+          </button>
+
+          <button onClick={() => handleTaskComplete(task)}>
+            Zakończ
           </button>
 
           <button onClick={() => handleTaskDelete(task.id)}>
@@ -791,6 +925,52 @@ const handleTaskEdit = (task: Task) => {
         <article key={task.id} className="task-card">
           <h4>{task.nazwa}</h4>
 
+          {selectedTaskId === task.id && (
+            <div className="task-details">
+              <h5>Szczegóły zadania</h5>
+
+              <p>
+                <strong>Historyjka:</strong>{' '}
+                {stories.find((story) => story.id === task.historyjka)?.nazwa ?? 'Brak'}
+              </p>
+
+              <p>
+                <strong>Odpowiedzialny:</strong>{' '}
+                {users.find((user) => user.id === task.wlasciciel)
+                  ? `${users.find((user) => user.id === task.wlasciciel)?.imie} ${users.find((user) => user.id === task.wlasciciel)?.nazwisko}`
+                  : 'Nieprzypisany'}
+              </p>
+
+              <p>
+                <strong>Opis:</strong> {task.opis}
+              </p>
+
+              <p>
+                <strong>Przewidywany czas:</strong>{' '}
+                {task.przewidywanyCzas} h
+              </p>
+
+              <p>
+                <strong>Data rozpoczęcia:</strong>{' '}
+                {task.dataStartu
+                  ? new Date(task.dataStartu).toLocaleString()
+                  : 'Brak'}
+              </p>
+
+              <p>
+                <strong>Data zakończenia:</strong>{' '}
+                {task.dataZakonczenia
+                  ? new Date(task.dataZakonczenia).toLocaleString()
+                  : 'Brak'}
+              </p>
+
+              <p>
+                <strong>Zrealizowane roboczogodziny:</strong>{' '}
+                {task.zrealizowaneRoboczogodziny ?? 'Brak'}
+              </p>
+            </div>
+          )}
+
           <p>{task.opis}</p>
 
           <p>
@@ -833,6 +1013,16 @@ const handleTaskEdit = (task: Task) => {
 
           <button onClick={() => handleTaskEdit(task)}>
             Edytuj
+          </button>
+
+          <button
+            onClick={() =>
+              setSelectedTaskId(
+                selectedTaskId === task.id ? null : task.id
+              )
+            }
+          >
+            Szczegóły
           </button>
 
           <button onClick={() => handleTaskDelete(task.id)}>
