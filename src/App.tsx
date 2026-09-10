@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { Project, Story } from './types'
-import { getLoggedUser } from './user'
+import type { Project, Story, Task } from './types'
+import { getLoggedUser, getUsers } from './user'
 import {
   getProjects,
   saveProjects,
@@ -8,15 +8,25 @@ import {
   saveStories,
   getActiveProjectId,
   saveActiveProjectId,
+  getTasks,
+  saveTasks,
 } from './storage'
 import './App.css'
 
 function App() {
   const user = getLoggedUser()
+  const users = getUsers()
   const [projects, setProjects] = useState<Project[]>([])
   const [activeProjectId, setActiveProjectId] =
     useState<number | null>(() => getActiveProjectId())
   const [stories, setStories] = useState<Story[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [taskNazwa, setTaskNazwa] = useState('')
+  const [taskOpis, setTaskOpis] = useState('')
+  const [taskPriorytet, setTaskPriorytet] =
+    useState<Task['priorytet']>('średni')
+  const [taskCzas, setTaskCzas] = useState('')
+  const [taskHistoryjka, setTaskHistoryjka] = useState<number | null>(null)
   const [storyNazwa, setStoryNazwa] = useState('')
   const [storyOpis, setStoryOpis] = useState('')
   const [storyPriorytet, setStoryPriorytet] =
@@ -28,16 +38,20 @@ function App() {
   const [editingId, setEditingId] = useState<number | null>(null)
 
   useEffect(() => {
-    setProjects(getProjects())
+  setProjects(getProjects())
   }, [])
 
   useEffect(() => {
   setStories(getStories())
-}, [])
+  }, [])
+
+  useEffect(() => {
+  setTasks(getTasks())
+  }, [])
 
   useEffect(() => {
   saveActiveProjectId(activeProjectId)
-}, [activeProjectId])
+  }, [activeProjectId])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,6 +87,165 @@ function App() {
     setNazwa('')
     setOpis('')
   }
+
+  const handleTaskSubmit = (e: React.FormEvent) => {
+  e.preventDefault()
+
+  if (!activeProjectId) {
+    alert('Najpierw wybierz aktywny projekt.')
+    return
+  }
+
+  if (!taskHistoryjka) {
+    alert('Wybierz historyjkę.')
+    return
+  }
+
+  if (!taskNazwa.trim() || !taskOpis.trim()) {
+    alert('Wypełnij nazwę i opis zadania.')
+    return
+  }
+
+  if (!taskCzas || Number(taskCzas) <= 0) {
+    alert('Podaj przewidywany czas wykonania.')
+    return
+  }
+
+  const newTask: Task = {
+    id: Date.now(),
+    nazwa: taskNazwa,
+    opis: taskOpis,
+    priorytet: taskPriorytet,
+    historyjka: taskHistoryjka,
+    przewidywanyCzas: Number(taskCzas),
+    stan: 'todo',
+    dataDodania: new Date().toISOString(),
+    dataStartu: null,
+    dataZakonczenia: null,
+    wlasciciel: null,
+  }
+
+  const updatedTasks = [...tasks, newTask]
+
+  setTasks(updatedTasks)
+  saveTasks(updatedTasks)
+
+  setTaskNazwa('')
+  setTaskOpis('')
+  setTaskPriorytet('średni')
+  setTaskCzas('')
+  setTaskHistoryjka(null)
+}
+
+  const handleTaskDelete = (taskId: number) => {
+  const updatedTasks = tasks.filter(
+    (task) => task.id !== taskId
+  )
+
+  setTasks(updatedTasks)
+  saveTasks(updatedTasks)
+}
+
+const handleTaskEdit = (task: Task) => {
+  const nowaNazwa = prompt('Nazwa zadania:', task.nazwa)
+
+  if (nowaNazwa === null) {
+    return
+  }
+
+  const nowyOpis = prompt('Opis zadania:', task.opis)
+
+  if (nowyOpis === null) {
+    return
+  }
+
+  const priorytet = prompt(
+    'Priorytet (niski/średni/wysoki):',
+    task.priorytet
+  ) as Task['priorytet'] | null
+
+  if (
+    priorytet !== 'niski' &&
+    priorytet !== 'średni' &&
+    priorytet !== 'wysoki'
+  ) {
+    alert('Nieprawidłowy priorytet.')
+    return
+  }
+
+  const czas = prompt(
+    'Przewidywany czas wykonania (godziny):',
+    String(task.przewidywanyCzas)
+  )
+
+  if (czas === null || Number(czas) <= 0) {
+    alert('Nieprawidłowy czas.')
+    return
+  }
+
+  const stan = prompt(
+    'Stan (todo/doing/done):',
+    task.stan
+  ) as Task['stan'] | null
+
+  if (
+    stan !== 'todo' &&
+    stan !== 'doing' &&
+    stan !== 'done'
+  ) {
+    alert('Nieprawidłowy stan.')
+    return
+  }
+
+  const updatedTasks = tasks.map((item) =>
+    item.id === task.id
+      ? {
+          ...item,
+          nazwa: nowaNazwa,
+          opis: nowyOpis,
+          priorytet: priorytet,
+          przewidywanyCzas: Number(czas),
+          stan: stan,
+        }
+      : item
+  )
+
+  setTasks(updatedTasks)
+  saveTasks(updatedTasks)
+}
+
+  const handleTaskAssign = (task: Task, userId: number) => {
+  const selectedUser = users.find(
+    (user) => user.id === userId
+  )
+
+  if (!selectedUser) {
+    return
+  }
+
+  if (
+    selectedUser.rola !== 'developer' &&
+    selectedUser.rola !== 'devops'
+  ) {
+    alert('Zadanie można przypisać tylko developerowi lub devopsowi.')
+    return
+  }
+
+  const updatedTasks = tasks.map((item) =>
+    item.id === task.id
+      ? {
+          ...item,
+          wlasciciel: userId,
+          stan: 'doing' as Task['stan'],
+          dataStartu: new Date().toISOString(),
+        }
+      : item
+  )
+
+  setTasks(updatedTasks)
+  saveTasks(updatedTasks)
+}
+
   const handleStorySubmit = (e: React.FormEvent) => {
   e.preventDefault()
 
@@ -296,6 +469,71 @@ function App() {
   </section>
 )}
 
+  {activeProjectId !== null && (
+  <section className="task-form">
+    <h2>Dodaj zadanie</h2>
+
+    <form onSubmit={handleTaskSubmit}>
+      <input
+        type="text"
+        placeholder="Nazwa zadania"
+        value={taskNazwa}
+        onChange={(e) => setTaskNazwa(e.target.value)}
+      />
+
+      <textarea
+        placeholder="Opis zadania"
+        value={taskOpis}
+        onChange={(e) => setTaskOpis(e.target.value)}
+      />
+
+      <select
+        value={taskPriorytet}
+        onChange={(e) =>
+          setTaskPriorytet(
+            e.target.value as Task['priorytet']
+          )
+        }
+      >
+        <option value="niski">Niski</option>
+        <option value="średni">Średni</option>
+        <option value="wysoki">Wysoki</option>
+      </select>
+
+      <input
+        type="number"
+        min="1"
+        placeholder="Przewidywany czas (godziny)"
+        value={taskCzas}
+        onChange={(e) => setTaskCzas(e.target.value)}
+      />
+
+      <select
+        value={taskHistoryjka ?? ''}
+        onChange={(e) =>
+          setTaskHistoryjka(
+            e.target.value ? Number(e.target.value) : null
+          )
+        }
+      >
+        <option value="">Wybierz historyjkę</option>
+
+        {stories
+          .filter((story) => story.projekt === activeProjectId)
+          .map((story) => (
+            <option key={story.id} value={story.id}>
+              {story.nazwa}
+            </option>
+          ))}
+      </select>
+
+      <button type="submit">
+        Dodaj zadanie
+      </button>
+    </form>
+  </section>
+)}
+
       {activeProjectId !== null && (
   <section className="stories-list">
     <h2>Historyjki projektu</h2>
@@ -321,7 +559,7 @@ function App() {
             <strong>Data utworzenia:</strong>{' '}
             {new Date(story.dataUtworzenia).toLocaleString()}
           </p>
-
+          
           <button onClick={() => handleStoryEdit(story)}>
             Edytuj
           </button>
@@ -329,6 +567,7 @@ function App() {
           <button onClick={() => handleStoryDelete(story.id)}>
             Usuń
           </button>
+          
         </article>
       ))}
 
@@ -391,6 +630,212 @@ function App() {
           </button>
 
           <button onClick={() => handleStoryDelete(story.id)}>
+            Usuń
+          </button>
+        </article>
+      ))}
+  </section>
+)}
+
+  {activeProjectId !== null && (
+  <section className="tasks-list">
+    <h2>Zadania projektu</h2>
+
+    <h3>TODO</h3>
+
+    {tasks
+      .filter((task) => {
+        const story = stories.find(
+          (item) => item.id === task.historyjka
+        )
+
+        return (
+          story?.projekt === activeProjectId &&
+          task.stan === 'todo'
+        )
+      })
+      .map((task) => (
+        <article key={task.id} className="task-card">
+          <h4>{task.nazwa}</h4>
+
+          <p>{task.opis}</p>
+
+          <p>
+            <strong>Priorytet:</strong> {task.priorytet}
+          </p>
+
+          <p>
+            <strong>Czas:</strong>{' '}
+            {task.przewidywanyCzas} h
+          </p>
+
+          <p>
+            <strong>Stan:</strong> {task.stan}
+          </p>
+
+          <label>
+            Odpowiedzialny:
+
+            <select
+              value={task.wlasciciel ?? ''}
+              onChange={(e) =>
+                handleTaskAssign(task, Number(e.target.value))
+              }
+            >
+              <option value="">Wybierz użytkownika</option>
+
+              {users
+                .filter(
+                  (user) =>
+                    user.rola === 'developer' ||
+                    user.rola === 'devops'
+                )
+                .map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.imie} {user.nazwisko} ({user.rola})
+                  </option>
+                ))}
+            </select>
+          </label>
+
+          <button onClick={() => handleTaskEdit(task)}>
+            Edytuj
+          </button>
+          <button onClick={() => handleTaskDelete(task.id)}>
+            Usuń
+          </button>
+        </article>
+      ))}
+
+    <h3>DOING</h3>
+
+    {tasks
+      .filter((task) => {
+        const story = stories.find(
+          (item) => item.id === task.historyjka
+        )
+
+        return (
+          story?.projekt === activeProjectId &&
+          task.stan === 'doing'
+        )
+      })
+      .map((task) => (
+        <article key={task.id} className="task-card">
+          <h4>{task.nazwa}</h4>
+
+          <p>{task.opis}</p>
+
+          <p>
+            <strong>Priorytet:</strong> {task.priorytet}
+          </p>
+
+          <p>
+            <strong>Czas:</strong>{' '}
+            {task.przewidywanyCzas} h
+          </p>
+
+          <p>
+            <strong>Stan:</strong> {task.stan}
+          </p>
+
+          <label>
+            Odpowiedzialny:
+
+            <select
+              value={task.wlasciciel ?? ''}
+              onChange={(e) =>
+                handleTaskAssign(task, Number(e.target.value))
+              }
+            >
+              <option value="">Wybierz użytkownika</option>
+
+              {users
+                .filter(
+                  (user) =>
+                    user.rola === 'developer' ||
+                    user.rola === 'devops'
+                )
+                .map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.imie} {user.nazwisko} ({user.rola})
+                  </option>
+                ))}
+            </select>
+          </label>
+
+          <button onClick={() => handleTaskEdit(task)}>
+            Edytuj
+          </button>
+
+          <button onClick={() => handleTaskDelete(task.id)}>
+            Usuń
+          </button>
+        </article>
+      ))}
+
+    <h3>DONE</h3>
+
+    {tasks
+      .filter((task) => {
+        const story = stories.find(
+          (item) => item.id === task.historyjka
+        )
+
+        return (
+          story?.projekt === activeProjectId &&
+          task.stan === 'done'
+        )
+      })
+      .map((task) => (
+        <article key={task.id} className="task-card">
+          <h4>{task.nazwa}</h4>
+
+          <p>{task.opis}</p>
+
+          <p>
+            <strong>Priorytet:</strong> {task.priorytet}
+          </p>
+
+          <p>
+            <strong>Czas:</strong>{' '}
+            {task.przewidywanyCzas} h
+          </p>
+
+          <p>
+            <strong>Stan:</strong> {task.stan}
+          </p>
+
+          <label>
+            Odpowiedzialny:
+
+            <select
+              value={task.wlasciciel ?? ''}
+              onChange={(e) =>
+                handleTaskAssign(task, Number(e.target.value))
+              }
+            >
+              <option value="">Wybierz użytkownika</option>
+
+              {users
+                .filter(
+                  (user) =>
+                    user.rola === 'developer' ||
+                    user.rola === 'devops'
+                )
+                .map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.imie} {user.nazwisko} ({user.rola})
+                  </option>
+                ))}
+            </select>
+          </label>
+
+          <button onClick={() => handleTaskEdit(task)}>
+            Edytuj
+          </button>
+
+          <button onClick={() => handleTaskDelete(task.id)}>
             Usuń
           </button>
         </article>

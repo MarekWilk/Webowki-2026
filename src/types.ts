@@ -7,6 +7,7 @@ export interface User {
   id: number
   imie: string
   nazwisko: string
+  rola: 'admin' | 'developer' | 'devops'
 }
 export interface Story {
   id: number
@@ -17,4 +18,17 @@ export interface Story {
   dataUtworzenia: string
   stan: 'todo' | 'doing' | 'done'
   wlasciciel: number
+}
+export interface Task {
+  id: number
+  nazwa: string
+  opis: string
+  priorytet: 'niski' | 'średni' | 'wysoki'
+  historyjka: number
+  przewidywanyCzas: number
+  stan: 'todo' | 'doing' | 'done'
+  dataDodania: string
+  dataStartu: string | null
+  dataZakonczenia: string | null
+  wlasciciel: number | null
 }
