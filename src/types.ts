@@ -3,12 +3,14 @@ export interface Project {
   nazwa: string
   opis: string
 }
+
 export interface User {
   id: number
   imie: string
   nazwisko: string
   rola: 'admin' | 'developer' | 'devops'
 }
+
 export interface Story {
   id: number
   nazwa: string
@@ -19,6 +21,7 @@ export interface Story {
   stan: 'todo' | 'doing' | 'done'
   wlasciciel: number
 }
+
 export interface Task {
   id: number
   nazwa: string
@@ -32,4 +35,13 @@ export interface Task {
   dataStartu: string | null
   dataZakonczenia: string | null
   wlasciciel: number | null
+}
+
+export type Notification = {
+  title: string
+  message: string
+  date: string
+  prority: 'low' | 'medium' | 'high'
+  isRead: boolean
+  recipientId: string
 }

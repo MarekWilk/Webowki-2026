@@ -1,4 +1,4 @@
-import type { Project, Story, Task } from './types'
+import type { Project, Story, Task, Notification } from './types'
 
 const STORAGE_KEY = 'manageme-projects'
 const STORY_STORAGE_KEY = 'manageme-stories'
@@ -64,5 +64,18 @@ export function saveActiveProjectId(projectId: number | null): void {
   localStorage.setItem(
     ACTIVE_PROJECT_STORAGE_KEY,
     String(projectId)
+  )
+}
+
+export const getNotifications = (): Notification[] => {
+  const data = localStorage.getItem('manageme-notifications')
+
+  return data ? JSON.parse(data) : []
+}
+
+export const saveNotifications = (notifications: Notification[]) => {
+  localStorage.setItem(
+    'manageme-notifications',
+    JSON.stringify(notifications)
   )
 }

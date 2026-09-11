@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Project, Story, Task } from './types'
+import type { Project, Story, Task, Notification } from './types'
 import { getLoggedUser, getUsers } from './user'
 import {
   getProjects,
@@ -10,35 +10,117 @@ import {
   saveActiveProjectId,
   getTasks,
   saveTasks,
+  getNotifications,
+  saveNotifications,
 } from './storage'
 import './App.css'
 import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
 import StoryList from './components/StoryList'
 import StoryForm from './components/StoryForm'
+import NotificationList from './components/NotificationList'
+import NotificationDetails from './components/NotificationDetails'
+import { initialNotifications } from './notifications'
 
 function App() {
   const [darkMode, setDarkMode] = useState(false)
   const user = getLoggedUser()
+  
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null)
+
+    useEffect(() => {
+    const savedNotifications = getNotifications()
+
+    if (savedNotifications.length === 0) {
+      saveNotifications(initialNotifications)
+      setNotifications(initialNotifications)
+    } else {
+      setNotifications(savedNotifications)
+    }
+  }, [])
+
+  const unreadNotifications = notifications.filter(
+    (notification) => !notification.isRead
+  ).length
+
+  const addNotification = (
+    title: string,
+    message: string,
+    prority: Notification['prority'],
+    recipientId: string
+  ) => {
+    if (prority === 'medium' || prority === 'high') {
+      window.alert(
+        `Nowe powiadomienie (${prority})\n\n${title}\n${message}`
+      )
+}
+  const newNotification: Notification = {
+    title,
+    message,
+    date: new Date().toISOString(),
+    prority,
+    isRead: false,
+    recipientId,
+  }
+
+  const updatedNotifications = [
+    newNotification,
+    ...notifications,
+  ]
+
+  setNotifications(updatedNotifications)
+  saveNotifications(updatedNotifications)
+  }
+
+  const handleMarkNotificationAsRead = (notification: Notification) => {
+  const updatedNotifications = notifications.map((item) =>
+    item === notification
+      ? {
+          ...item,
+          isRead: true,
+        }
+      : item
+  )
+
+  setNotifications(updatedNotifications)
+  saveNotifications(updatedNotifications)
+  }
+
+  const handleSelectNotification = (notification: Notification) => {
+    handleMarkNotificationAsRead(notification)
+
+    setSelectedNotification({
+      ...notification,
+      isRead: true,
+    })
+  }
+
   const users = getUsers()
   const [projects, setProjects] = useState<Project[]>([])
   const [activeProjectId, setActiveProjectId] =
     useState<number | null>(() => getActiveProjectId())
+
   const [stories, setStories] = useState<Story[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
+
   const [taskNazwa, setTaskNazwa] = useState('')
   const [taskOpis, setTaskOpis] = useState('')
   const [taskPriorytet, setTaskPriorytet] =
     useState<Task['priorytet']>('średni')
+
   const [taskCzas, setTaskCzas] = useState('')
   const [taskHistoryjka, setTaskHistoryjka] = useState<number | null>(null)
   const [storyNazwa, setStoryNazwa] = useState('')
   const [storyOpis, setStoryOpis] = useState('')
   const [storyPriorytet, setStoryPriorytet] =
   useState<Story['priorytet']>('średni')
+
   const [storyStan, setStoryStan] =
   useState<Story['stan']>('todo')
+
   const [nazwa, setNazwa] = useState('')
   const [opis, setOpis] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -77,6 +159,7 @@ function App() {
 
       setProjects(updatedProjects)
       saveProjects(updatedProjects)
+      
       setEditingId(null)
     } else {
       const newProject: Project = {
@@ -89,6 +172,12 @@ function App() {
 
       setProjects(updatedProjects)
       saveProjects(updatedProjects)
+      addNotification(
+        'Nowy projekt',
+        `Utworzono projekt: ${nazwa}`,
+        'high',
+        String(user.id)
+      )
     }
 
     setNazwa('')
@@ -137,6 +226,19 @@ function App() {
 
   setTasks(updatedTasks)
   saveTasks(updatedTasks)
+  const story = stories.find(
+  (item) => item.id === taskHistoryjka
+  )
+
+  if (story) {
+    addNotification(
+      'Nowe zadanie',
+      `Dodano zadanie: ${taskNazwa}`,
+      'medium',
+      String(story.wlasciciel)
+    )
+  }
+
 
   setTaskNazwa('')
   setTaskOpis('')
@@ -146,12 +248,31 @@ function App() {
 }
 
   const handleTaskDelete = (taskId: number) => {
+  const task = tasks.find(
+    (item) => item.id === taskId
+  )
+
   const updatedTasks = tasks.filter(
-    (task) => task.id !== taskId
+    (item) => item.id !== taskId
   )
 
   setTasks(updatedTasks)
   saveTasks(updatedTasks)
+
+  if (task) {
+    const story = stories.find(
+      (item) => item.id === task.historyjka
+    )
+
+    if (story) {
+      addNotification(
+        'Usunięto zadanie',
+        `Zadanie "${task.nazwa}" zostało usunięte z historyjki.`,
+        'medium',
+        String(story.wlasciciel)
+      )
+    }
+  }
 }
 
 const handleTaskEdit = (task: Task) => {
@@ -253,6 +374,13 @@ const handleTaskEdit = (task: Task) => {
   setTasks(updatedTasks)
   saveTasks(updatedTasks)
 
+  addNotification(
+    'Przypisano zadanie',
+    `Zadanie "${task.nazwa}" zostało Ci przypisane.`,
+    'high',
+    String(userId)
+  )
+
   const updatedStories = stories.map((story) =>
     story.id === task.historyjka && story.stan === 'todo'
       ? {
@@ -264,7 +392,20 @@ const handleTaskEdit = (task: Task) => {
 
   setStories(updatedStories)
   saveStories(updatedStories)
-}
+
+  const story = stories.find(
+    (item) => item.id === task.historyjka
+  )
+
+  if (story) {
+    addNotification(
+      'Zmiana statusu zadania',
+      `Zadanie "${task.nazwa}" zmieniło status na doing.`,
+      'low',
+      String(story.wlasciciel)
+    )
+  }
+  }
 
   const handleTaskComplete = (task: Task) => {
   const czas = prompt(
@@ -292,6 +433,20 @@ const handleTaskEdit = (task: Task) => {
 
   setTasks(updatedTasks)
   saveTasks(updatedTasks)
+
+
+  const story = stories.find(
+  (item) => item.id === task.historyjka
+  )
+
+  if (story) {
+    addNotification(
+      'Zadanie zakończone',
+      `Zadanie "${task.nazwa}" zmieniło status na done.`,
+      'medium',
+      String(story.wlasciciel)
+    )
+  }
 
   const storyTasks = updatedTasks.filter(
     (item) => item.historyjka === task.historyjka
@@ -433,6 +588,37 @@ const handleTaskEdit = (task: Task) => {
         {darkMode ? '☀️ Tryb jasny' : '🌙 Tryb ciemny'}
       </button>
 
+      <button
+        className="btn btn-primary mb-3"
+        onClick={() => setShowNotifications(!showNotifications)}
+      >
+        🔔 Powiadomienia ({unreadNotifications})
+      </button>
+      <button
+        className="btn btn-link mb-3"
+        onClick={() => {
+          setShowNotifications(true)
+          setSelectedNotification(null)
+        }}
+      >
+        Wszystkie powiadomienia
+      </button>
+      {showNotifications && !selectedNotification && (
+        <NotificationList
+          notifications={notifications.filter(
+            (notification) => notification.recipientId === String(user.id)
+          )}
+          onMarkAsRead={handleMarkNotificationAsRead}
+          onSelect={handleSelectNotification}
+        />
+      )}
+
+      {selectedNotification && (
+        <NotificationDetails
+          notification={selectedNotification}
+          onBack={() => setSelectedNotification(null)}
+        />
+      )}
       <p>
       Zalogowany użytkownik: {user.imie} {user.nazwisko}
       </p>
